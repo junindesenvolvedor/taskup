@@ -1,0 +1,953 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Diário de Tarefas</title>
+  <meta name="color-scheme" content="dark" />
+  <style>
+    :root{
+      --bg:#222222;
+      --panel:#0b0b0b;
+      --panel2:#101010;
+      --line:#2a2a2a;
+      --text:#ffffff;
+      --muted:#cfcfcf;
+      --orange:#ff7a18;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --r:22px;
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      background: var(--bg);
+      color:var(--text);
+      overflow-x:hidden;
+    }
+
+    body:before{
+      content:"";
+      position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.10'/%3E%3C/svg%3E");
+      mix-blend-mode:overlay;
+      pointer-events:none;
+      opacity:.22;
+    }
+
+    .wrap{max-width:1120px;margin:0 auto;padding:26px 16px 56px; position:relative}
+
+    .top{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+      margin-bottom:14px;
+    }
+    .brand{display:flex; flex-direction:column; gap:8px}
+    h1{
+      margin:0;
+      font-size:clamp(22px,3vw,34px);
+      letter-spacing:.2px;
+      display:flex; gap:10px; align-items:center;
+    }
+    .spark{
+      width:38px;height:38px;border-radius:14px;
+      background: var(--orange);
+      color:#000;
+      display:grid;place-items:center;
+      border:1px solid var(--line);
+      box-shadow: 0 14px 34px rgba(255,122,24,.14);
+    }
+    .sub{color:var(--muted); font-size:14px; line-height:1.35; max-width:74ch}
+
+    .chiprow{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center}
+    .chip{
+      border:1px solid var(--line);
+      background: var(--panel);
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      color:var(--muted);
+      display:flex; align-items:center; gap:8px;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:99px;
+      background: var(--orange);
+      box-shadow: 0 0 18px rgba(255,122,24,.25);
+    }
+
+    .card{
+      background: var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .gate{
+      min-height: 72vh;
+      display:grid;
+      place-items:center;
+      padding:18px;
+    }
+    .login{
+      width:min(540px, 100%);
+      padding:18px;
+      border-radius:var(--r);
+      border:1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+    .loginHead{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      margin-bottom:14px;
+    }
+    .loginHead h2{margin:0;font-size:18px;letter-spacing:.2px}
+
+    .field{display:grid; gap:6px; margin-top:12px}
+    label{font-size:12px;color:var(--muted)}
+
+    input[type="text"], input[type="password"], input[type="date"], select{
+      width:100%;
+      padding:12px 12px;
+      border-radius:16px;
+      background: #000;
+      border:1px solid var(--line);
+      color:var(--text);
+      outline:none;
+      transition: box-shadow .2s ease, border-color .2s ease, transform .05s ease;
+    }
+    input:focus, select:focus{
+      border-color: var(--orange);
+      box-shadow: 0 0 0 4px rgba(255,122,24,.12);
+    }
+
+    .btn{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:12px 14px;
+      cursor:pointer;
+      font-weight:850;
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition: transform .06s ease, filter .12s ease;
+      background:#000;
+      color:var(--text);
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn:hover{filter:brightness(1.08)}
+
+    .btnPrimary{
+      background: var(--orange);
+      color:#000;
+      border-color: color-mix(in oklab, var(--orange) 70%, var(--line));
+    }
+    .btnGhost{background:#000;color:var(--text)}
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .loginActions{margin-top:14px; display:flex; gap:10px; justify-content:space-between; align-items:center}
+    .hint{font-size:12px;color:var(--muted)}
+    .shake{animation: shake .35s ease}
+    @keyframes shake{
+      0%,100%{transform:translateX(0)}
+      20%{transform:translateX(-6px)}
+      40%{transform:translateX(6px)}
+      60%{transform:translateX(-4px)}
+      80%{transform:translateX(4px)}
+    }
+
+    .app{display:none}
+
+    .toolbar{
+      display:grid;
+      grid-template-columns: 1.4fr 200px 170px 150px;
+      gap:10px;
+      padding:14px;
+      border-bottom:1px solid var(--line);
+      background: var(--panel2);
+    }
+    @media (max-width: 980px){
+      .toolbar{grid-template-columns: 1fr 1fr;}
+      .toolbar .span2{grid-column: 1 / -1;}
+    }
+    .toolbar .btnPrimary{height:44px; align-self:end}
+
+    .content{
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:14px;
+      padding:14px;
+    }
+    @media (max-width: 980px){ .content{grid-template-columns:1fr} }
+
+    .panel{padding:14px;border-radius:var(--r)}
+    .panelTitle{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom:10px;
+    }
+    .panelTitle h2{margin:0;font-size:16px}
+
+    .searchWrap{
+      display:flex; gap:10px; align-items:center;
+      min-width: 260px;
+    }
+    @media (max-width: 640px){
+      .searchWrap{min-width:unset; width:100%}
+      .panelTitle{flex-direction:column; align-items:stretch}
+    }
+    .search{position:relative; flex:1}
+    .search input{padding-left:40px}
+    .search .lens{
+      position:absolute; left:12px; top:50%;
+      transform: translateY(-50%);
+      opacity:.9;
+      pointer-events:none;
+    }
+
+    .list{padding:6px 0 0}
+    .empty{
+      color:var(--muted);
+      padding:18px 12px;
+      border:1px dashed var(--line);
+      border-radius:18px;
+      margin:10px 0 0;
+      background:#000;
+    }
+
+    .item{
+      display:grid;
+      grid-template-columns: 34px 1fr auto;
+      gap:12px;
+      align-items:center;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:#000;
+      margin-top:10px;
+      transition: transform .12s ease, border-color .2s ease, box-shadow .2s ease, opacity .18s ease;
+      position:relative;
+      animation: in .16s ease both;
+    }
+    @keyframes in{
+      from{transform:translateY(6px); opacity:0}
+      to{transform:translateY(0); opacity:1}
+    }
+    .item:hover{
+      transform: translateY(-1px);
+      border-color: var(--orange);
+      box-shadow: 0 10px 26px rgba(0,0,0,.45);
+    }
+    .item.removing{opacity:0; transform:translateY(6px)}
+    .item.done{
+      border-color: color-mix(in oklab, var(--orange) 55%, var(--line));
+    }
+
+    .chk{
+      width:28px; height:28px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:#000;
+      display:grid; place-items:center;
+      cursor:pointer;
+      transition: transform .08s ease, box-shadow .2s ease, border-color .2s ease;
+    }
+    .chk:active{transform:scale(.98)}
+    .chk svg{width:18px;height:18px; opacity:0; transform: scale(.85); transition: opacity .12s ease, transform .12s ease}
+    .item.done .chk{
+      border-color: var(--orange);
+      box-shadow: 0 0 0 4px rgba(255,122,24,.10);
+    }
+    .item.done .chk svg{opacity:1; transform: scale(1)}
+
+    .title{
+      font-weight:900;
+      line-height:1.25;
+      letter-spacing:.15px;
+    }
+    .item.done .title{
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      text-decoration-color: var(--orange);
+      opacity:.92;
+    }
+
+    .meta{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:6px;
+      display:flex; gap:8px; flex-wrap:wrap;
+    }
+    .tag{
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:3px 8px;
+      background: var(--panel);
+    }
+    .tag.good{border-color: var(--orange)}
+    .tag.warn{border-color: var(--line)}
+
+    .actions{display:flex; gap:8px; align-items:center}
+    .iconbtn{
+      width:40px; height:40px;
+      border-radius:16px;
+      background:#000;
+      border:1px solid var(--line);
+      color:var(--text);
+      cursor:pointer;
+      display:grid; place-items:center;
+      transition: filter .12s ease, transform .06s ease, border-color .2s ease;
+      user-select:none;
+    }
+    .iconbtn:hover{filter:brightness(1.08); border-color:var(--orange)}
+    .iconbtn:active{transform:translateY(1px)}
+
+    .side{
+      background: var(--panel2);
+      border:1px solid var(--line);
+      border-radius:var(--r);
+      padding:14px;
+    }
+    .side h3{margin:0 0 8px; font-size:16px}
+    .stats{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+      margin-top:10px;
+    }
+    .pill{
+      border:1px solid var(--line);
+      border-radius: 18px;
+      padding:10px 12px;
+      background:#000;
+    }
+    .pill .k{color:var(--muted); font-size:12px}
+    .pill .v{font-size:18px; font-weight:950; margin-top:4px}
+    .progress{
+      height:12px;border-radius:999px;
+      background:#000;border:1px solid var(--line);
+      overflow:hidden;
+      margin-top:10px;
+    }
+    .bar{
+      height:100%;
+      width:0%;
+      background: var(--orange);
+      transition: width .25s ease;
+    }
+    .sideActions{
+      margin-top:12px;
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+
+    .toastWrap{
+      position:fixed; right:16px; bottom:16px;
+      display:grid; gap:10px;
+      z-index:50;
+    }
+    .toast{
+      width:min(360px, calc(100vw - 32px));
+      border-radius:18px;
+      border:1px solid var(--line);
+      background: var(--panel2);
+      box-shadow: var(--shadow);
+      padding:12px 12px;
+      display:flex; gap:10px; align-items:flex-start;
+      animation: pop .18s ease;
+    }
+    @keyframes pop{
+      from{transform:translateY(8px); opacity:0}
+      to{transform:translateY(0); opacity:1}
+    }
+    .toastIcon{
+      width:30px;height:30px;border-radius:12px;
+      display:grid;place-items:center;
+      background:#000;
+      border:1px solid var(--line);
+      flex:0 0 auto;
+    }
+    .toastTxt{font-size:13px;color:var(--text)}
+    .toastSub{margin-top:3px;font-size:12px;color:var(--muted)}
+    .toastX{
+      margin-left:auto;
+      width:32px;height:32px;border-radius:12px;
+      border:1px solid var(--line);
+      background:#000;
+      color:var(--text);
+      cursor:pointer;
+    }
+
+    .modalBackdrop{
+      position:fixed; inset:0;
+      background: rgba(0,0,0,.72);
+      display:none;
+      place-items:center;
+      z-index:60;
+      padding:16px;
+    }
+    .modal{
+      width:min(620px, 100%);
+      background: var(--panel2);
+      border:1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding:16px;
+    }
+    .modalHead{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      margin-bottom:12px;
+    }
+    .modalHead h3{margin:0; font-size:16px}
+    .modalActions{
+      display:flex; gap:10px; justify-content:flex-end; margin-top:12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <h1><span class=""></span></h1>
+        <div class=""></div>
+      </div>
+      <div class="chiprow">
+        <div class="chip"><span class="dot"></span><span id="whoChip">Desconectado</span></div>
+        <button class="btn btnGhost" id="logoutBtn" style="display:none">Sair</button>
+      </div>
+    </div>
+
+    <div class="gate" id="gate">
+      <div class="login" id="loginBox">
+        <div class="loginHead">
+          <h2>Entrar</h2>
+        </div>
+
+        <div class="field">
+          <label for="user">Usuário</label>
+          <input id="user" type="text" autocomplete="username" placeholder="Digite seu usuário" />
+        </div>
+
+        <div class="field">
+          <label for="pass">Senha</label>
+          <input id="pass" type="password" autocomplete="current-password" placeholder="Digite sua senha" />
+        </div>
+
+        <div class="loginActions">
+          <div class="hint"></div>
+          <button class="btn btnPrimary" id="loginBtn">Entrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card app" id="app">
+      <div class="toolbar">
+        <div class="span2">
+          <label for="taskInput">Nova tarefa</label>
+          <input id="taskInput" type="text" placeholder="" />
+        </div>
+
+        <div>
+          <label for="dateInput">Dia</label>
+          <input id="dateInput" type="date" />
+        </div>
+
+        <div>
+          <label for="filterSelect">Filtro</label>
+          <select id="filterSelect">
+            <option value="all">Todas</option>
+            <option value="open">A fazer</option>
+            <option value="done">Concluídas</option>
+          </select>
+        </div>
+
+        <button class="btn btnPrimary" id="addBtn">Adicionar</button>
+      </div>
+
+      <div class="content">
+        <div class="panel">
+          <div class="panelTitle">
+            <h2 id="listTitle">Tarefas</h2>
+
+          </div>
+
+          <div class="list" id="list"></div>
+          <div class="empty" id="empty" hidden>
+          </div>
+        </div>
+
+        <aside class="side">
+          <h3>Resumo do dia</h3>
+          <div class="sub" id=""></div>
+
+          <div class="stats">
+            <div class="pill">
+              <div class="k">Total</div>
+              <div class="v" id="statTotal">0</div>
+            </div>
+            <div class="pill">
+              <div class="k">Concluídas</div>
+              <div class="v" id="statDone">0</div>
+            </div>
+            <div class="pill">
+              <div class="k">A fazer</div>
+              <div class="v" id="statOpen">0</div>
+            </div>
+            <div class="pill">
+              <div class="k">Progresso</div>
+              <div class="v" id="statPct">0%</div>
+            </div>
+          </div>
+
+          <div class="progress" aria-label="Progresso">
+            <div class="bar" id="bar"></div>
+          </div>
+
+          <div class="sideActions">
+            <button class="btn btnGhost" id="clearDoneBtn">Limpar concluídas</button>
+            <button class="btn btnGhost" id="clearDayBtn">Apagar dia</button>
+          </div>
+
+          <div class="hint" style="margin-top:10px">
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="toastWrap" id="toasts"></div>
+
+  <div class="modalBackdrop" id="editBackdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <div class="modalHead">
+        <h3 id="editTitle">Editar tarefa</h3>
+        <button class="iconbtn" id="editCloseBtn" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="field" style="margin-top:0">
+        <label for="editInput">Texto</label>
+        <input id="editInput" type="text" />
+      </div>
+
+      <div class="modalActions">
+        <button class="btn btnGhost" id="editCancelBtn">Cancelar</button>
+        <button class="btn btnPrimary" id="editSaveBtn">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+
+  const FIXED_USER = "franciel";
+  const FIXED_PASS = "240507";
+
+  const gate = $("#gate");
+  const app = $("#app");
+  const whoChip = $("#whoChip");
+  const logoutBtn = $("#logoutBtn");
+
+  const userEl = $("#user");
+  const passEl = $("#pass");
+  const loginBtn = $("#loginBtn");
+  const loginBox = $("#loginBox");
+
+  const taskInput = $("#taskInput");
+  const dateInput = $("#dateInput");
+  const filterSelect = $("#filterSelect");
+  const addBtn = $("#addBtn");
+  const list = $("#list");
+  const empty = $("#empty");
+  const listTitle = $("#listTitle");
+
+  const searchInput = $("#searchInput");
+  const clearSearchBtn = $("#clearSearchBtn");
+
+  const statTotal = $("#statTotal");
+  const statDone = $("#statDone");
+  const statOpen = $("#statOpen");
+  const statPct = $("#statPct");
+  const summaryText = $("#summaryText");
+  const bar = $("#bar");
+  const clearDoneBtn = $("#clearDoneBtn");
+  const clearDayBtn = $("#clearDayBtn");
+
+  const toastWrap = $("#toasts");
+
+  const editBackdrop = $("#editBackdrop");
+  const editCloseBtn = $("#editCloseBtn");
+  const editCancelBtn = $("#editCancelBtn");
+  const editSaveBtn = $("#editSaveBtn");
+  const editInput = $("#editInput");
+  let editingTaskId = null;
+
+  const SESSION_KEY = "daily_tasks_session_orange_flat_v1";
+  function storageKeyForUser(u){ return `daily_tasks_data_orange_flat_v1::${u}`; }
+
+  function loadData(username){
+    try{
+      const raw = localStorage.getItem(storageKeyForUser(username));
+      if(!raw) return { tasks: [] };
+      const parsed = JSON.parse(raw);
+      if(!parsed || !Array.isArray(parsed.tasks)) return { tasks: [] };
+      return parsed;
+    }catch{ return { tasks: [] }; }
+  }
+  function saveData(username, data){
+    localStorage.setItem(storageKeyForUser(username), JSON.stringify(data));
+  }
+
+  function setSession(username){
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ username, at: Date.now() }));
+  }
+  function getSession(){
+    try{
+      const raw = localStorage.getItem(SESSION_KEY);
+      if(!raw) return null;
+      const s = JSON.parse(raw);
+      if(!s?.username) return null;
+      return s;
+    }catch{ return null; }
+  }
+  function clearSession(){ localStorage.removeItem(SESSION_KEY); }
+
+  function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+  function todayISO(){
+    const d = new Date();
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  function formatBR(iso){
+    const [y,m,d] = iso.split("-");
+    return `${d}/${m}/${y}`;
+  }
+
+  function toast(icon, title, sub){
+    const node = document.createElement("div");
+    node.className = "toast";
+    node.innerHTML = `
+      <div class="toastIcon">${icon}</div>
+      <div>
+        <div class="toastTxt">${title}</div>
+        ${sub ? `<div class="toastSub">${sub}</div>` : ``}
+      </div>
+      <button class="toastX" aria-label="Fechar">✕</button>
+    `;
+    const kill = () => node.remove();
+    node.querySelector(".toastX").addEventListener("click", kill);
+    toastWrap.appendChild(node);
+    setTimeout(kill, 2600);
+  }
+
+  function openEditModal(task){
+    editingTaskId = task.id;
+    editInput.value = task.text || "";
+    editBackdrop.style.display = "grid";
+    editBackdrop.setAttribute("aria-hidden","false");
+    setTimeout(() => editInput.focus(), 20);
+    editInput.select();
+  }
+  function closeEditModal(){
+    editBackdrop.style.display = "none";
+    editBackdrop.setAttribute("aria-hidden","true");
+    editingTaskId = null;
+  }
+
+  let username = null;
+  let data = { tasks: [] };
+
+  function dayTasks(date){ return data.tasks.filter(t => t.date === date); }
+
+  function computeDayStats(date){
+    const day = dayTasks(date);
+    const total = day.length;
+    const done = day.filter(t => t.done).length;
+    const open = total - done;
+    const pct = total === 0 ? 0 : Math.round((done/total)*100);
+    return { total, done, open, pct };
+  }
+
+  function normalizeOrderForDate(date){
+    const tasks = dayTasks(date).sort((a,b)=>(a.order??0)-(b.order??0) || (a.createdAt??0)-(b.createdAt??0));
+    tasks.forEach((t, idx)=> t.order = idx);
+  }
+
+  function getViewTasks(){
+    const date = dateInput.value;
+    const filter = filterSelect.value;
+    const q = (searchInput?.value || "").trim().toLowerCase();
+
+    let tasks = dayTasks(date);
+    tasks.sort((a,b) => (a.order ?? 0) - (b.order ?? 0) || (a.createdAt ?? 0) - (b.createdAt ?? 0));
+
+    if(filter === "open") tasks = tasks.filter(t => !t.done);
+    if(filter === "done") tasks = tasks.filter(t => t.done);
+    if(q) tasks = tasks.filter(t => (t.text || "").toLowerCase().includes(q));
+
+    return tasks;
+  }
+
+  function render(){
+    const date = dateInput.value;
+    listTitle.textContent = `Tarefas de ${formatBR(date)}`;
+
+    const tasks = getViewTasks();
+    list.innerHTML = "";
+    empty.hidden = tasks.length !== 0;
+
+    for(const t of tasks){
+      const item = document.createElement("div");
+      item.className = "item" + (t.done ? " done" : "");
+      item.dataset.id = t.id;
+
+      item.innerHTML = `
+        <div class="chk" role="button" aria-label="Marcar como concluída">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M20 7L10 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <div>
+          <div class="title"></div>
+          <div class="meta">
+            <span class="tag ${t.done ? "good" : "warn"}">${t.done ? "Concluída ✅" : "A fazer ⏳"}</span>
+            <span class="tag">Dia: ${formatBR(t.date)}</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="iconbtn" title="Editar" aria-label="Editar">✏️</button>
+          <button class="iconbtn" title="Excluir" aria-label="Excluir">🗑️</button>
+        </div>
+      `;
+
+      item.querySelector(".title").textContent = t.text;
+
+      item.querySelector(".chk").addEventListener("click", () => {
+        const task = data.tasks.find(x => x.id === t.id);
+        if(!task) return;
+        task.done = !task.done;
+        saveData(username, data);
+        render();
+        toast(task.done ? "✅" : "↩️", task.done ? "Concluída" : "A fazer", task.done ? "Boa!" : "Voltando pro jogo.");
+      });
+
+      item.querySelectorAll(".iconbtn")[0].addEventListener("click", (e) => {
+        e.stopPropagation();
+        const task = data.tasks.find(x => x.id === t.id);
+        if(!task) return;
+        openEditModal(task);
+      });
+
+      item.querySelectorAll(".iconbtn")[1].addEventListener("click", (e) => {
+        e.stopPropagation();
+        item.classList.add("removing");
+        setTimeout(() => {
+          data.tasks = data.tasks.filter(x => x.id !== t.id);
+          normalizeOrderForDate(date);
+          saveData(username, data);
+          render();
+          toast("🗑️", "Excluída", "Removida com sucesso.");
+        }, 160);
+      });
+
+      list.appendChild(item);
+    }
+
+    const s = computeDayStats(date);
+    statTotal.textContent = s.total;
+    statDone.textContent = s.done;
+    statOpen.textContent = s.open;
+    statPct.textContent = `${s.pct}%`;
+    bar.style.width = `${s.pct}%`;
+
+    if(s.total === 0) summaryText.textContent = "Sem tarefas ainda. Comece por uma pequena.";
+    else if(s.open === 0) summaryText.textContent = "Dia concluído. Perfeito. 🟧";
+    else summaryText.textContent = `Você concluiu ${s.done} de ${s.total}.`;
+  }
+
+  function addTask(){
+    const text = taskInput.value.trim();
+    const date = dateInput.value;
+
+    if(!date){ toast("📅","Escolha um dia","Selecione a data."); return; }
+    if(!text){ taskInput.focus(); toast("📝","Digite uma tarefa","Não pode ficar vazio."); return; }
+
+    const day = dayTasks(date);
+    const nextOrder = day.length ? Math.max(...day.map(t => t.order ?? 0)) + 1 : 0;
+
+    data.tasks.push({
+      id: uid(),
+      text,
+      date,
+      done: false,
+      createdAt: Date.now(),
+      order: nextOrder
+    });
+
+    saveData(username, data);
+    taskInput.value = "";
+    taskInput.focus();
+    render();
+    toast("➕","Adicionada","Tarefa criada.");
+  }
+
+  function login(){
+    const u = (userEl.value || "").trim();
+    const p = (passEl.value || "").trim();
+
+    if(u === FIXED_USER && p === FIXED_PASS){
+      username = u;
+      setSession(username);
+      data = loadData(username);
+
+      dateInput.value = todayISO();
+
+      gate.style.display = "none";
+      app.style.display = "block";
+      logoutBtn.style.display = "inline-flex";
+      whoChip.textContent = `Conectado: ${username}`;
+
+      render();
+      toast("🔓","Bem-vindo",`Olá, ${username}.`);
+      setTimeout(()=>taskInput.focus(), 50);
+    } else {
+      loginBox.classList.remove("shake");
+      void loginBox.offsetWidth;
+      loginBox.classList.add("shake");
+      toast("🔒","Login inválido","Verifique usuário e senha.");
+      passEl.select();
+    }
+  }
+
+  function logout(){
+    clearSession();
+    username = null;
+    data = { tasks: [] };
+
+    app.style.display = "none";
+    gate.style.display = "grid";
+    logoutBtn.style.display = "none";
+    whoChip.textContent = "Desconectado";
+
+    userEl.value = FIXED_USER;
+    passEl.value = "";
+    searchInput.value = "";
+    closeEditModal();
+
+    setTimeout(()=>passEl.focus(), 50);
+    toast("👋","Saiu","Sessão encerrada.");
+  }
+
+  function saveEdit(){
+    if(!editingTaskId) return;
+    const task = data.tasks.find(t => t.id === editingTaskId);
+    if(!task) { closeEditModal(); return; }
+
+    const newText = (editInput.value || "").trim();
+    if(!newText){
+      editInput.focus();
+      toast("📝","Texto vazio","Digite algo para salvar.");
+      return;
+    }
+    task.text = newText;
+    saveData(username, data);
+    closeEditModal();
+    render();
+    toast("✏️","Editada","Alterações salvas.");
+  }
+
+  editSaveBtn.addEventListener("click", saveEdit);
+  editCancelBtn.addEventListener("click", closeEditModal);
+  editCloseBtn.addEventListener("click", closeEditModal);
+
+  editBackdrop.addEventListener("click", (e) => {
+    if(e.target === editBackdrop) closeEditModal();
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if(editBackdrop.style.display === "grid"){
+      if(e.key === "Escape") closeEditModal();
+      if(e.key === "Enter") saveEdit();
+    }
+  });
+
+  loginBtn.addEventListener("click", login);
+  userEl.addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(); });
+  passEl.addEventListener("keydown", (e)=>{ if(e.key==="Enter") login(); });
+
+  logoutBtn.addEventListener("click", logout);
+
+  addBtn.addEventListener("click", addTask);
+  taskInput.addEventListener("keydown", (e)=>{ if(e.key==="Enter") addTask(); });
+
+  dateInput.addEventListener("change", () => {
+    normalizeOrderForDate(dateInput.value);
+    saveData(username, data);
+    render();
+  });
+
+  filterSelect.addEventListener("change", render);
+
+  searchInput.addEventListener("input", render);
+  clearSearchBtn.addEventListener("click", () => {
+    searchInput.value = "";
+    searchInput.focus();
+    render();
+  });
+
+  clearDoneBtn.addEventListener("click", () => {
+    const date = dateInput.value;
+    const before = data.tasks.length;
+    data.tasks = data.tasks.filter(t => !(t.date === date && t.done));
+    normalizeOrderForDate(date);
+    if(data.tasks.length === before){
+      toast("🧼","Nada para limpar","Sem concluídas nesse dia.");
+      return;
+    }
+    saveData(username, data);
+    render();
+    toast("🧼","Limpo","Concluídas removidas.");
+  });
+
+
+  clearDayBtn.addEventListener("click", () => {
+    const date = dateInput.value;
+    const count = data.tasks.filter(t => t.date === date).length;
+    if(count === 0){
+      toast("🗓️","Dia vazio","Não há tarefas.");
+      return;
+    }
+    data.tasks = data.tasks.filter(t => t.date !== date);
+    saveData(username, data);
+    render();
+    toast("🔥","Dia apagado","Tarefas do dia removidas.");
+  });
+
+  const sess = getSession();
+  if(sess?.username){
+    username = sess.username;
+    data = loadData(username);
+    gate.style.display = "none";
+    app.style.display = "block";
+    logoutBtn.style.display = "inline-flex";
+    whoChip.textContent = `Conectado: ${username}`;
+    dateInput.value = todayISO();
+    render();
+    setTimeout(()=>taskInput.focus(), 50);
+  } else {
+    userEl.value = FIXED_USER;
+    setTimeout(()=>passEl.focus(), 50);
+  }
+})();
+</script>
+</body>
+</html>
